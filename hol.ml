@@ -128,15 +128,18 @@ loads "canon.ml";;      (* Tools for putting terms in canonical forms        *)
 loads "meson.ml";;      (* First order automation: MESON (model elimination) *)
 loads "firstorder.ml";; (* More utilities for first-order shadow terms       *)
 loads "metis.ml";;      (* More advanced first-order automation: Metis       *)
+(*
 loads "thecops.ml";;    (* Connection-based automation: leanCoP and nanoCoP  *)
 loads "quot.ml";;       (* Derived rules for defining quotient types         *)
 loads "impconv.ml";;    (* More powerful implicational rewriting etc.        *)
+*)
 
 (* ------------------------------------------------------------------------- *)
 (* Mathematical theories and additional proof tools.                         *)
 (* ------------------------------------------------------------------------- *)
 
 loads "pair.ml";;       (* Theory of pairs                                   *)
+(*
 loads "compute.ml";;    (* General call-by-value reduction tool for terms    *)
 loads "nums.ml";;       (* Axiom of Infinity, definition of natural numbers  *)
 loads "recursion.ml";;  (* Tools for primitive recursion on inductive types  *)
@@ -164,3 +167,4 @@ loads "define.ml";;     (* Support for general recursive definitions         *)
 
 loads "help.ml";;       (* Online help using the entries in Help directory   *)
 loads "database.ml";;   (* List of name-theorem pairs for search system      *)
+*)
