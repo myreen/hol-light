@@ -50,14 +50,14 @@ let mk_pair_def = new_definition
 
 let PAIR_EXISTS_THM = prove
  (`?x. ?(a:A) (b:B). x = mk_pair a b`,
-  MESON_TAC[]);;
+  METIS_TAC[]);;
 
 let prod_tybij = new_type_definition
   "prod" ("ABS_prod","REP_prod") PAIR_EXISTS_THM;;
 
 let REP_ABS_PAIR = prove
  (`!(x:A) (y:B). REP_prod (ABS_prod (mk_pair x y)) = mk_pair x y`,
-  MESON_TAC[prod_tybij]);;
+  METIS_TAC[prod_tybij]);;
 
 parse_as_infix (",",(14,"right"));;
 
@@ -77,7 +77,7 @@ let PAIR_EQ = prove
     DISCH_THEN(MP_TAC o AP_TERM `REP_prod:A#B->A->B->bool`) THEN
     REWRITE_TAC[REP_ABS_PAIR] THEN REWRITE_TAC[mk_pair_def; FUN_EQ_THM];
     ALL_TAC] THEN
-  MESON_TAC[]);;
+  METIS_TAC[]);;
 
 let PAIR_SURJECTIVE = prove
  (`!p:A#B. ?x y. p = x,y`,
@@ -294,11 +294,11 @@ inductive_type_store :=
 
 let FORALL_PAIR_THM = prove
  (`!P. (!p. P p) <=> (!p1 p2. P(p1,p2))`,
-  MESON_TAC[PAIR]);;
+  METIS_TAC[PAIR]);;
 
 let EXISTS_PAIR_THM = prove
  (`!P. (?p. P p) <=> ?p1 p2. P(p1,p2)`,
-  MESON_TAC[PAIR]);;
+  METIS_TAC[PAIR]);;
 
 let LAMBDA_PAIR_THM = prove
  (`!t. (\p. t p) = (\(x,y). t(x,y))`,
@@ -331,7 +331,7 @@ let FORALL_UNCURRY = prove
 
 let EXISTS_UNCURRY = prove
  (`!P. (?f:A->B->C. P f) <=> (?f. P (\a b. f(a,b)))`,
-  ONCE_REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
+  ONCE_REWRITE_TAC[METIS[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
   REWRITE_TAC[FORALL_UNCURRY]);;
 
 let EXISTS_CURRY = prove
@@ -344,11 +344,11 @@ let FORALL_CURRY = prove
 
 let FORALL_UNPAIR_THM = prove
  (`!P. (!x y. P x y) <=> !z. P (FST z) (SND z)`,
-  REWRITE_TAC[FORALL_PAIR_THM; FST; SND] THEN MESON_TAC[]);;
+  REWRITE_TAC[FORALL_PAIR_THM; FST; SND] THEN METIS_TAC[]);;
 
 let EXISTS_UNPAIR_THM = prove
  (`!P. (?x y. P x y) <=> ?z. P (FST z) (SND z)`,
-  REWRITE_TAC[EXISTS_PAIR_THM; FST; SND] THEN MESON_TAC[]);;
+  REWRITE_TAC[EXISTS_PAIR_THM; FST; SND] THEN METIS_TAC[]);;
 
 let FORALL_PAIR_FUN_THM = prove
  (`!P. (!f:A->B#C. P f) <=> (!g h. P(\a. g a,h a))`,
@@ -358,7 +358,7 @@ let FORALL_PAIR_FUN_THM = prove
 
 let EXISTS_PAIR_FUN_THM = prove
  (`!P. (?f:A->B#C. P f) <=> (?g h. P(\a. g a,h a))`,
-  REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
+  REWRITE_TAC[METIS[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
   REWRITE_TAC[FORALL_PAIR_FUN_THM]);;
 
 let FORALL_UNPAIR_FUN_THM = prove
@@ -422,7 +422,7 @@ let CHOICE_PAIRED_THM = prove
   [REWRITE_TAC[LAMBDA_PAIR_THM]; SELECT_ELIM_TAC] THEN
   INTRO_TAC "![c]; c" THEN ONCE_REWRITE_TAC[GSYM PAIR] THEN
   REMOVE_THEN "PQ" MATCH_MP_TAC THEN REMOVE_THEN "c" MATCH_MP_TAC THEN
-  REWRITE_TAC[EXISTS_PAIR_THM] THEN ASM_MESON_TAC[]);;
+  REWRITE_TAC[EXISTS_PAIR_THM] THEN ASM_METIS_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Expansion of a let-term.                                                  *)
@@ -455,7 +455,7 @@ let (LET_TAC:tactic) =
   and PROVE_DEPAIRING_EXISTS =
     let pth = prove
      (`((x,y) = a) <=> (x = FST a) /\ (y = SND a)`,
-      MESON_TAC[PAIR; PAIR_EQ]) in
+      METIS_TAC[PAIR; PAIR_EQ]) in
     let rewr1_CONV = GEN_REWRITE_CONV TOP_DEPTH_CONV [pth]
     and rewr2_RULE = GEN_REWRITE_RULE (LAND_CONV o DEPTH_CONV)
                       [TAUT `(x = x) <=> T`; TAUT `a /\ T <=> a`] in
