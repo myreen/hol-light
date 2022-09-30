@@ -6954,7 +6954,10 @@ let insert ({empty=empty;unitn=unitn;nonunit=nonunit}) (cl',a) =
       in
         {empty = empty; unitn = unitn; nonunit = nonunit}
     | fstLit :: (sndLit :: otherLits as nonFstLits) ->
-        let {nextId=nextId;clauses=clauses;fstLits=fstLits;sndLits=sndLits} = nonunit
+        let nextId = nonunit.nextId in
+        let clauses = nonunit.clauses in
+        let fstLits = nonunit.fstLits in
+        let sndLits = nonunit.sndLits
         in let id_length = (nextId, Literal.Set.size cl')
         in let fstLits = Literal_net.insert fstLits (fstLit,id_length)
         in let (sndLit,otherLits) =
@@ -6978,11 +6981,13 @@ let filter pred ({empty=empty;unitn=unitn;nonunit=nonunit}) =
       in let unitn = Literal_net.filter pred3 unitn
 
       in let nonunit =
-            let {nextId=nextId;clauses=clauses;fstLits=fstLits;sndLits=sndLits} = nonunit
-            in let clauses' = Intmap.filter (fun x -> pred3 (snd x)) clauses
-          in
-            if Intmap.size clauses = Intmap.size clauses' then nonunit
-            else
+           let nextId = nonunit.nextId in
+           let clauses = nonunit.clauses in
+           let fstLits = nonunit.fstLits in
+           let sndLits = nonunit.sndLits in
+           let clauses' = Intmap.filter (fun x -> pred3 (snd x)) clauses in
+             if Intmap.size clauses = Intmap.size clauses' then nonunit
+             else
                 let predId (id,_) = Intmap.inDomain id clauses'
                 in let fstLits = Literal_net.filter predId fstLits
                 and sndLits = Literal_net.filter predId sndLits
@@ -7058,11 +7063,13 @@ let toString subsume = "Subsume{" ^ Int.toString (size subsume) ^ "}";;
         let addId = match max with None -> idSetAdd | Some n -> idSetAddMax n
 
         in let subLit lits (lit,acc) =
-            Mlist.foldl addId acc (Literal_net.matchNet lits lit)
+            Mlist.foldl addId acc (Literal_net.matchNet lits lit) in
 
-        in let {nextId = _; clauses=clauses; fstLits=fstLits; sndLits=sndLits} = nonunit
+        let clauses = nonunit.clauses in
+        let fstLits = nonunit.fstLits in
+        let sndLits = nonunit.sndLits in
 
-        in let subCl' (id,_) =
+        let subCl' (id,_) =
               let (lits',cl',a) = Intmap.get clauses id
             in
               genClauseSubsumes pred cl' lits' cl a
@@ -7247,7 +7254,9 @@ let weightLowerBound (Weight (m,c)) =
 (* The Knuth-Bendix term order.                                              *)
 (* ------------------------------------------------------------------------- *)
 
-let compare {weight=weight;precedence=precedence} =
+let compare x =
+      let weight = x.weight in
+      let precedence = x.precedence in
       let weightDifference tm1 tm2 =
             let w1 = weightTerm weight tm1
             and w2 = weightTerm weight tm2
@@ -7363,15 +7372,18 @@ type rewrite =
     Rewrite of rewrite_t;;
 
 let updateWaiting rw waiting =
-      let Rewrite {order=order; known=known; redexes=redexes; subterms=subterms; waiting = _} = rw
-    in
+    let Rewrite r = rw in
+    let order = r.order in
+    let known = r.known in
+    let redexes = r.redexes in
+    let subterms = r.subterms in
       Rewrite
         {order = order; known = known; redexes = redexes;
          subterms = subterms; waiting = waiting}
     ;;
 
-let deleteWaiting (Rewrite {waiting=waiting} as rw) id =
-    updateWaiting rw (Intset.delete waiting id);;
+let deleteWaiting (Rewrite r as rw) id =
+    updateWaiting rw (Intset.delete r.waiting id);;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic operations                                                          *)
@@ -7386,12 +7398,12 @@ let newRewrite order =
        subterms = Term_net.newNet {fifo = false};
        waiting = Intset.empty};;
 
-let peek (Rewrite {known=known}) id = Intmap.peek known id;;
+let peek (Rewrite r) id = Intmap.peek r.known id;;
 
-let size (Rewrite {known=known}) = Intmap.size known;;
+let size (Rewrite r) = Intmap.size r.known;;
 
-let equations (Rewrite {known=known}) =
-    Intmap.foldr (fun (_,(eqn,_),eqns) -> eqn :: eqns) [] known;;
+let equations (Rewrite r) =
+    Intmap.foldr (fun (_,(eqn,_),eqns) -> eqn :: eqns) [] r.known;;
 
 
 (*MetisTrace1
@@ -7425,23 +7437,23 @@ local
       ppField "waiting"
         (Print.ppMap (Intset.toList) (Print.ppList Print.ppInt));;
 in
-  let pp (Rewrite {known,redexes,subterms,waiting,...}) =
+  let pp (Rewrite r) =
       Print.inconsistentBlock 2
         [Print.ppString "Rewrite",
          Print.break,
          Print.inconsistentBlock 1
            [Print.ppString "{",
-            ppKnown known,
+            ppKnown r.known,
 (*MetisTrace5
             Print.ppString ",",
             Print.break,
-            ppRedexes redexes,
+            ppRedexes r.redexes,
             Print.ppString ",",
             Print.break,
-            ppSubterms subterms,
+            ppSubterms r.subterms,
             Print.ppString ",",
             Print.break,
-            ppWaiting waiting,
+            ppWaiting r.waiting,
 *)
             Print.skip],
          Print.ppString "}"]
@@ -7501,10 +7513,14 @@ let orderToOrient = function
       | None -> ins (ins redexes l id Left_to_right) r id Right_to_left;;
 
 
-let add (Rewrite {known=known} as rw) (id,eqn) =
+let add (Rewrite r as rw) (id,eqn) =
+  let known = r.known in
     if Intmap.inDomain id known then rw
     else
-        let Rewrite {order=order;redexes=redexes;subterms=subterms;waiting=waiting} = rw
+      let order = r.order in
+      let redexes = r.redexes in
+      let subterms = r.subterms in
+      let waiting = r.waiting
 
         in let ort = orderToOrient (order (fst eqn))
 
@@ -7685,24 +7701,24 @@ let rewriteIdLiteralsRule' order known redexes id lits th =
 let rewriteIdRule' order known redexes id th =
     rewriteIdLiteralsRule' order known redexes id (Thm.clause th) th;;
 
-let rewrIdConv (Rewrite {known=known;redexes=redexes}) order =
-    rewrIdConv' order known redexes;;
+let rewrIdConv (Rewrite r) order =
+    rewrIdConv' r.order r.known r.redexes;;
 
 let rewrConv rewrite order = rewrIdConv rewrite order (-1);;
 
-let rewriteIdConv (Rewrite {known=known;redexes=redexes}) order =
-    rewriteIdConv' order known redexes;;
+let rewriteIdConv (Rewrite r) order =
+    rewriteIdConv' order r.known r.redexes;;
 
 let rewriteConv rewrite order = rewriteIdConv rewrite order (-1);;
 
-let rewriteIdLiteralsRule (Rewrite {known=known;redexes=redexes}) order =
-    rewriteIdLiteralsRule' order known redexes;;
+let rewriteIdLiteralsRule (Rewrite r) order =
+    rewriteIdLiteralsRule' order r.known r.redexes;;
 
 let rewriteLiteralsRule rewrite order =
     rewriteIdLiteralsRule rewrite order (-1);;
 
-let rewriteIdRule (Rewrite {known=known;redexes=redexes}) order =
-    rewriteIdRule' order known redexes;;
+let rewriteIdRule (Rewrite r) order =
+    rewriteIdRule' order r.known r.redexes;;
 
 let rewriteRule rewrite order = rewriteIdRule rewrite order (-1);;
 
@@ -7756,8 +7772,13 @@ let findReducibles order known subterms id =
     ;;
 
 let reduce1 newx id (eqn0,ort0) (rpl,spl,todo,rw,changed) =
-      let (eq0,_) = eqn0
-      in let Rewrite {order=order;known=known;redexes=redexes;subterms=subterms;waiting=waiting} = rw
+      let (eq0,_) = eqn0 in
+      let Rewrite r = rw in
+      let order = r.order in
+      let known = r.known in
+      let redexes = r.redexes in
+      let subterms = r.subterms in
+      let waiting = r.waiting
       in let (eq,_) as eqn = rewriteIdEqn' order known redexes id eqn0
       in let identical =
             let (l0,r0) = eq0
@@ -7855,7 +7876,12 @@ let pick known set =
         let () = Print.trace ppPl "Rewrite.rebuild: rpl" rpl
         let () = Print.trace ppPl "Rewrite.rebuild: spl" spl
 *)
-        let Rewrite {order=order;known=known;redexes=redexes;subterms=subterms;waiting=waiting} = rw
+        let Rewrite r = rw in
+        let order = r.order in
+        let known = r.known in
+        let redexes = r.redexes in
+        let subterms = r.subterms in
+        let waiting = r.waiting
         in let redexes = cleanRedexes known redexes rpl
         in let subterms = cleanSubterms known subterms spl
       in
@@ -7867,7 +7893,10 @@ let pick known set =
            waiting = waiting}
       ;;
 
-let rec reduceAcc (rpl, spl, todo, (Rewrite {known=known;waiting=waiting} as rw), changed) =
+let rec reduceAcc (rpl, spl, todo, (Rewrite r as rw), changed) =
+        let known = r.known in
+        let waiting = r.waiting in
+
     match pick known todo with
       Some (id,eqn_ort) ->
         let todo = Intset.delete todo id
@@ -7881,7 +7910,7 @@ let rec reduceAcc (rpl, spl, todo, (Rewrite {known=known;waiting=waiting} as rw)
           reduceAcc (reduce1 true id eqn_ort (rpl,spl,todo,rw,changed))
       | None -> (rebuild rpl spl rw, Intset.toList changed);;
 
-let isReduced (Rewrite {waiting=waiting}) = Intset.null waiting;;
+let isReduced (Rewrite r) = Intset.null r.waiting;;
 
 let reduce' rw =
     if isReduced rw then (rw,[])
@@ -8252,9 +8281,12 @@ let resolve (cl1,lit1) (cl2,lit2) =
       let () = Print.trace pp "Clause.resolve: cl2" cl2
       let () = Print.trace Literal.pp "Clause.resolve: lit2" lit2
 *)
-      let Clause {parameters=parameters; thm = th1} = cl1
-      and Clause {thm = th2} = cl2
-      in let sub = Literal.unify Substitute.empty lit1 (Literal.negate lit2)
+      let Clause c1 = cl1 in
+      let Clause c2 = cl2 in
+      let parameters = c1.parameters in
+      let th1 = c1.thm in
+      let th2 = c2.thm in
+      let sub = Literal.unify Substitute.empty lit1 (Literal.negate lit2)
 (*MetisTrace5
       let () = Print.trace Substitute.pp "Clause.resolve: sub" sub
 *)
@@ -8295,9 +8327,12 @@ let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
       let () = Print.trace Term.ppPath "Clause.paramodulate: path2" path2
       let () = Print.trace Term.pp "Clause.paramodulate: tm2" tm2
 *)
-      let Clause {parameters=parameters; thm = th1} = cl1
-      and Clause {thm = th2} = cl2
-      in let sub = Substitute.unify Substitute.empty tm1 tm2
+      let Clause c1 = cl1 in
+      let Clause c2 = cl2 in
+      let parameters = c1.parameters in
+      let th1 = c1.thm in
+      let th2 = c2.thm in
+      let sub = Substitute.unify Substitute.empty tm1 tm2
       in let lit1 = Literal.subst sub lit1
       and lit2 = Literal.subst sub lit2
       and th1 = Thm.subst sub th1
@@ -8413,9 +8448,8 @@ let default : parameters =
 
 open Term_net
 let empty parameters =
-      let {clause=clause} = parameters
-      in let {Clause.ordering=ordering} = clause
-    in
+    let clause = parameters.clause in
+    let ordering = clause.Clause.ordering in
       Active
         {parameters = parameters;
          clauses = Intmap.newMap ();
@@ -8464,9 +8498,10 @@ let toString active = "Active{" ^ string_of_int (size active) ^ "}";;
 (* ------------------------------------------------------------------------- *)
 
 let simplify simp units rewr subs =
-      let {subsumes = s; reduce = r; rewrites = w} = simp
-
-      in let rewrite cl =
+    let s = simp.subsumes in
+    let r = simp.reduce in
+    let w = simp.rewrites in
+    let rewrite cl =
             let cl' = Clause.rewrite rewr cl
           in
             if Clause.equalThms cl cl' then Some cl else Clause.simplify cl'
@@ -8673,7 +8708,7 @@ let deduce active cl =
 
   let rewrite_rewritables active rewr_ids =
         let Active {parameters=parameters;rewrite=rewrite;clauses=clauses;allSubterms=allSubterms} = active
-        in let {clause = {Clause.ordering=ordering}} = parameters
+        in let ordering = parameters.clause.Clause.ordering
         in let order = Knuth_bendix_order.compare ordering
 
         in let addRewr (id,acc) =
@@ -8794,14 +8829,14 @@ let deduce active cl =
 
   let prefactor_simplify active subsume =
         let Active {parameters=parameters;units=units;rewrite=rewrite} = active
-        in let {prefactor=prefactor} = parameters
+        in let prefactor = parameters.prefactor
       in
         simplify prefactor units rewrite subsume
       ;;
 
   let postfactor_simplify active subsume =
         let Active {parameters=parameters;units=units;rewrite=rewrite} = active
-        in let {postfactor=postfactor} = parameters
+        in let postfactor = parameters.postfactor
       in
         simplify postfactor units rewrite subsume
       ;;
@@ -8882,9 +8917,10 @@ let factor = fun active -> fun cls ->
 let mk_clause params th =
   Clause.mk {Clause.parameters = params; Clause.id = Clause.newId (); Clause.thm = th};;
 
-let newActive parameters {axioms_thm=axioms_thm;conjecture_thm=conjecture_thm} =
-      let {clause=clause} = parameters
-
+let newActive parameters x =
+      let axioms_thm = x.axioms_thm in
+      let conjecture_thm = x.conjecture_thm in
+      let clause = parameters.clause
       in let mk_clause = mk_clause clause
       in let active = empty parameters
       in let (active,axioms) = factor active (List.map mk_clause axioms_thm)
@@ -9018,8 +9054,9 @@ let perturbModel vM cls =
       ;;
 
 let initialModel axioms conjecture parm =
-      let {model=model;initialPerturbations=initialPerturbations}  = parm
-      in let m = Model.newModel model
+      let model = parm.model in
+      let initialPerturbations = parm.initialPerturbations in
+      let m = Model.newModel model
       in let () = perturbModel m conjecture initialPerturbations
       in let () = perturbModel m axioms initialPerturbations
     in
@@ -9028,10 +9065,10 @@ let initialModel axioms conjecture parm =
 
 let checkModels parms models (fv,cl) =
       let check ((parm,model),z) =
-            let {maxChecks=maxChecks;weight=weight} = parm
-            in let n = maxChecks
-            in let (vT,vF) = Model.check Model.interpretClause n model fv cl
-          in
+          let maxChecks = parm.maxChecks in
+          let weight = parm.weight in
+          let n = maxChecks in
+          let (vT,vF) = Model.check Model.interpretClause n model fv cl in
             Math.pow (1.0 +. Real.fromInt vT /. Real.fromInt (vT + vF), weight) *. z
     in
       Mlist.foldl check 1.0 (zip parms models)
@@ -9039,8 +9076,7 @@ let checkModels parms models (fv,cl) =
 
 let perturbModels parms models cls =
       let perturb (parm,model) =
-            let {perturbations=perturbations} = parm
-          in
+          let perturbations = parm.perturbations in
             perturbModel model cls perturbations
     in
       app perturb (zip parms models)
@@ -9097,7 +9133,7 @@ let perturbModels parms models cls =
 
 let add' waiting dist mcls cls =
       let Waiting {parameters=parameters;clauses=clauses;models=models} = waiting
-      in let {modelsP = modelParameters} = parameters
+      in let modelParameters = parameters.modelsP
 
       in let dist = dist +. Math.ln (Real.fromInt (length cls))
 
@@ -9133,14 +9169,16 @@ let add waiting (dist,cls) =
   let cmp ((w1,_),(w2,_)) = Real.compare (w1,w2);;
 
   let empty parameters axioms conjecture =
-        let {modelsP = modelParameters} = parameters
+        let modelParameters = parameters.modelsP
         in let clauses = Heap.newHeap cmp
         and models = List.map (initialModel axioms conjecture) modelParameters
       in
         Waiting {parameters = parameters; clauses = clauses; models = models}
       ;;
 
-  let newWaiting parameters {axioms_cl=axioms_cl;conjecture_cl=conjecture_cl} =
+  let newWaiting parameters x =
+      let axioms_cl = x.axioms_cl in
+      let conjecture_cl = x.conjecture_cl in
         let mAxioms = mkModelClauses axioms_cl
         and mConjecture = mkModelClauses conjecture_cl
 
@@ -9204,9 +9242,9 @@ let default : parameters =
      waitingP = Waiting.default};;
 
 let newResolution parameters ths =
-      let {activeP = activeParm; waitingP = waitingParm} = parameters
-
-      in let (active,cls) = Active.newActive activeParm ths  (* cls = factored ths *)
+      let activeParm = parameters.activeP in
+      let waitingParm = parameters.waitingP in
+      let (active,cls) = Active.newActive activeParm ths  (* cls = factored ths *)
 
       in let waiting = Waiting.newWaiting waitingParm cls
     in
