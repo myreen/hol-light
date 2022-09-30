@@ -465,8 +465,8 @@ and ('key,'value) node =
        right : ('key,'value) tree};;
 
 let lowerPriorityNode node1 node2 =
-      let {priority = p1} = node1
-      and {priority = p2} = node2
+      let p1 = node1.priority
+      and p2 = node2.priority
     in
       comparePriority (p1,p2) = Less
     ;;
@@ -480,12 +480,12 @@ local
   let checkSizes tree =
       match tree with
         Empty -> 0
-      | Tree (Node {size,left,right,...}) ->
+      | Tree node ->
         let
-          let l = checkSizes left
-          and r = checkSizes right
+          let l = checkSizes node.left
+          and r = checkSizes node.right
 
-          let () = if l + 1 + r = size then () else raise Bug "wrong size"
+          let () = if l + 1 + r = node.size then () else raise Bug "wrong size"
         in
           size
         end;;
@@ -493,22 +493,22 @@ local
   let checkSorted compareKey x tree =
       match tree with
         Empty -> x
-      | Tree (Node {left,key,right,...}) ->
+      | Tree node ->
         let
-          let x = checkSorted compareKey x left
+          let x = checkSorted compareKey x node.left
 
           let () =
               match x with
                 None -> ()
               | Some k ->
-                match compareKey (k,key) with
+                match compareKey (k,node.key) with
                   Less -> ()
                 | Equal -> raise Bug "duplicate keys"
                 | Greater -> raise Bug "unsorted"
 
           let x = Some key
         in
-          checkSorted compareKey x right
+          checkSorted compareKey x node.right
         end;;
 
   let checkPriorities compareKey tree =
@@ -516,10 +516,9 @@ local
         Empty -> None
       | Tree node ->
         let
-          let Node {left,right,...} = node
 
           let () =
-              match checkPriorities compareKey left with
+              match checkPriorities compareKey node.left with
                 None -> ()
               | Some lnode ->
                 if not (lowerPriorityNode node lnode) then ()
@@ -555,7 +554,7 @@ end;;
 
 let treeNew () = Empty;;
 
-let nodeSize ({size = x}) = x;;
+let nodeSize node = node.size;;
 
 let treeSize tree =
     match tree with
@@ -589,9 +588,7 @@ let rec treeLeftSpine acc tree =
     | Tree node -> nodeLeftSpine acc node
 
 and nodeLeftSpine acc node =
-      let {left=left} = node
-    in
-      treeLeftSpine (node :: acc) left
+      treeLeftSpine (node :: acc) node.left
     ;;
 
 let rec treeRightSpine acc tree =
@@ -600,9 +597,7 @@ let rec treeRightSpine acc tree =
     | Tree node -> nodeRightSpine acc node
 
 and nodeRightSpine acc node =
-      let {right=right} = node
-    in
-      treeRightSpine (node :: acc) right
+      treeRightSpine (node :: acc) node.right
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -647,17 +642,13 @@ let rec treeAppend tree1 tree2 =
         Empty -> tree1
       | Tree node2 ->
         if lowerPriorityNode node1 node2 then
-            let {priority=priority;left=left;key=key;value=value;right=right} = node2
-
-            in let left = treeAppend tree1 left
+          let left = treeAppend tree1 node2.left
           in
-            mkTree priority left key value right
+            mkTree node1.priority left node2.key node2.value node2.right
         else
-            let {priority=priority;left=left;key=key;value=value;right=right} = node1
-
-            in let right = treeAppend right tree2
+          let right = treeAppend node1.right tree2
           in
-            mkTree priority left key value right
+            mkTree node1.priority node1.left node1.key node1.value right
           ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -682,12 +673,10 @@ let rec treePeek compareKey pkey tree =
     | Tree node -> nodePeek compareKey pkey node
 
 and nodePeek compareKey pkey node =
-      let {left=left;key=key;value=value;right=right} = node
-    in
-      match compareKey (pkey,key) with
-        Less -> treePeek compareKey pkey left
-      | Equal -> Some value
-      | Greater -> treePeek compareKey pkey right
+      match compareKey (pkey,node.key) with
+        Less -> treePeek compareKey pkey node.left
+      | Equal -> Some node.value
+      | Greater -> treePeek compareKey pkey node.right
     ;;
 
 (* ------------------------------------------------------------------------- *)
