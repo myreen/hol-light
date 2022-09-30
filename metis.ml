@@ -5364,7 +5364,8 @@ let elementListSpace {size = n} arity =
       None -> None
     | Some m as s -> if m <= maxSpace then s else None;;
 
-let elementListIndex {size = n} =
+let elementListIndex s =
+    let n = s.size in
       let rec f acc elts =
           match elts with
             [] -> acc
@@ -5595,7 +5596,7 @@ and sucName = Name.fromString "suc";;
 
   (* Support *)
 
-  let modN {size = n} x = x mod n;;
+  let modN s x = x mod s.size;;
 
   let oneN sz = modN sz 1;;
 
@@ -5607,7 +5608,8 @@ and sucName = Name.fromString "suc";;
 
   let addFn sz x y = Some (modN sz (x + y));;
 
-  let divFn {size = n} x y =
+  let divFn s x y =
+      let n = s.size in
         let y = if y = 0 then n else y
       in
         Some (Int.div x y)
@@ -5615,7 +5617,8 @@ and sucName = Name.fromString "suc";;
 
   let expFn sz x y = Some (exp (multN sz) x y (oneN sz));;
 
-  let modFn {size = n} x y =
+  let modFn s x y =
+    let n = s.size in
         let y = if y = 0 then n else y
       in
         Some (x mod y)
@@ -5623,13 +5626,13 @@ and sucName = Name.fromString "suc";;
 
   let multFn sz x y = Some (multN sz (x,y));;
 
-  let negFn {size = n} x = Some (if x = 0 then 0 else n - x);;
+  let negFn n x = Some (if x = 0 then 0 else n.size - x);;
 
-  let preFn {size = n} x = Some (if x = 0 then n - 1 else x - 1);;
+  let preFn n x = Some (if x = 0 then n.size - 1 else x - 1);;
 
-  let subFn {size = n} x y = Some (if x < y then n + x - y else x - y);;
+  let subFn n x y = Some (if x < y then n.size + x - y else x - y);;
 
-  let sucFn {size = n} x = Some (if x = n - 1 then 0 else x + 1);;
+  let sucFn n x = Some (if x = n.size - 1 then 0 else x + 1);;
 
   (* Relations *)
 
@@ -5681,7 +5684,9 @@ and sucName = Name.fromString "suc";;
 
   (* Support *)
 
-  let cutN {size = n} x = if x >= n then n - 1 else x;;
+  let cutN s x =
+    let n = s.size in
+      if x >= n then n - 1 else x;;
 
   let oneN sz = cutN sz 1;;
 
@@ -5697,8 +5702,8 @@ and sucName = Name.fromString "suc";;
 
   let expFn sz x y = Some (exp (multN sz) x y (oneN sz));;
 
-  let modFn {size = n} x y =
-      if y = 0 || x = n - 1 then None else Some (x mod y);;
+  let modFn n x y =
+      if y = 0 || x = n.size - 1 then None else Some (x mod y);;
 
   let multFn sz x y = Some (multN sz (x,y));;
 
@@ -5706,43 +5711,48 @@ and sucName = Name.fromString "suc";;
 
   let preFn _ x = if x = 0 then None else Some (x - 1);;
 
-  let subFn {size = n} x y =
+  let subFn n x y =
       if y = 0 then Some x
-      else if x = n - 1 || x < y then None
+      else if x = n.size - 1 || x < y then None
       else Some (x - y);;
 
   let sucFn sz x = Some (cutN sz (x + 1));;
 
   (* Relations *)
 
-  let dividesRel {size = n} x y =
+  let dividesRel n x y =
       if x = 1 || y = 0 then Some true
       else if x = 0 then Some false
-      else if y = n - 1 then None
+      else if y = n.size - 1 then None
       else Some (divides x y);;
 
-  let evenRel {size = n} x =
-      if x = n - 1 then None else Some (x mod 2 = 0);;
+  let evenRel n x =
+      if x = n.size - 1 then None else Some (x mod 2 = 0);;
 
-  let geRel {size = n} y x =
+  let geRel s y x =
+      let n = s.size in
       if x = n - 1 then if y = n - 1 then None else Some false
       else if y = n - 1 then Some true else Some (x <= y);;
 
-  let gtRel {size = n} y x =
+  let gtRel s y x =
+      let n = s.size in
       if x = n - 1 then if y = n - 1 then None else Some false
       else if y = n - 1 then Some true else Some (x < y);;
 
   let isZeroRel _ x = Some (x = 0);;
 
-  let leRel {size = n} x y =
+  let leRel s x y =
+      let n = s.size in
       if x = n - 1 then if y = n - 1 then None else Some false
       else if y = n - 1 then Some true else Some (x <= y);;
 
-  let ltRel {size = n} x y =
+  let ltRel s x y =
+      let n = s.size in
       if x = n - 1 then if y = n - 1 then None else Some false
       else if y = n - 1 then Some true else Some (x < y);;
 
-  let oddRel {size = n} x =
+  let oddRel s x =
+      let n = s.size in
       if x = n - 1 then None else Some (x mod 2 = 1);;
 
   let overflowFixed =
@@ -5792,7 +5802,8 @@ and universeName = Name.fromString "universe";;
 
   (* Support *)
 
-  let eltN {size = n} =
+  let eltN s =
+      let n = s.size in
         let rec f acc = function
             0 -> acc
           | x -> f (acc + 1) (Int.div x 2)
@@ -5953,7 +5964,8 @@ let getValuation v' v =
       Some i -> i
     | None -> raise (Error "Model.getValuation: incomplete valuation");;
 
-let randomValuation {size = n} vs =
+let randomValuation s vs =
+      let n = s.size in
       let f (v,v') = insertValuation v' (v, Portable.randomInt n)
     in
       Name.Set.foldl f emptyValuation vs
