@@ -5319,15 +5319,11 @@ let emptyFixed =
     ;;
 
 let peekFunctionFixed fix name_arity =
-      let {functions = fns} = fix
-    in
-      Name_arity.Map.peek fns name_arity
+      Name_arity.Map.peek fix.functions name_arity
     ;;
 
 let peekRelationFixed fix name_arity =
-      let {relations = rels} = fix
-    in
-      Name_arity.Map.peek rels name_arity
+      Name_arity.Map.peek fix.relations name_arity
     ;;
 
 let getFunctionFixed fix name_arity =
@@ -5341,32 +5337,23 @@ let getRelationFixed fix name_arity =
     | None -> uselessFixedRelation;;
 
 let insertFunctionFixed fix name_arity_fun =
-      let {functions = fns; relations = rels} = fix
-
-      in let fns = Name_arity.Map.insert fns name_arity_fun
+    let fns = Name_arity.Map.insert fix.functions name_arity_fun
     in
         {functions = fns;
-         relations = rels}
+         relations = fix.relations}
     ;;
 
 let insertRelationFixed fix name_arity_rel =
-      let {functions = fns; relations = rels} = fix
-
-      in let rels = Name_arity.Map.insert rels name_arity_rel
+    let rels = Name_arity.Map.insert fix.relations name_arity_rel
     in
-        {functions = fns;
+        {functions = fix.functions;
          relations = rels}
     ;;
 
   let union _ = raise (Bug "Model.unionFixed: nameArity clash");;
   let unionFixed fix1 fix2 =
-        let {functions = fns1; relations = rels1} = fix1
-        and {functions = fns2; relations = rels2} = fix2
-
-        in let fns = Name_arity.Map.union union fns1 fns2
-
-        in let rels = Name_arity.Map.union union rels1 rels2
-      in
+        let fns = Name_arity.Map.union union fix1.functions fix2.functions in
+        let rels = Name_arity.Map.union union fix1.relations fix2.relations in
           {functions = fns;
            relations = rels}
       ;;
