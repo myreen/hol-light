@@ -4186,15 +4186,6 @@ let resolve lit (Thm (cl1,_) as th1) (Thm (cl2,_) as th2) =
       Thm (Literal.Set.union cl1' cl2', (Resolve,[th1;th2]))
     ;;
 
-(*MetisDebug
-let resolve = fun lit -> fun pos -> fun neg ->
-    resolve lit pos neg
-    handle Error err ->
-      raise Error ("Thm.resolve:\nlit = " ^ Literal.toString lit ^
-                   "\npos = " ^ toString pos ^
-                   "\nneg = " ^ toString neg ^ "\n" ^ err);;
-*)
-
 (* ------------------------------------------------------------------------- *)
 (*                                                                           *)
 (* --------- refl t                                                          *)
@@ -4291,10 +4282,6 @@ let inferenceToThm = function
       in
         Substitute.normalize (recon [(Literal.Set.toList cl, Substitute.empty)])
       ;;
-(*MetisDebug
-      handle Error err ->
-        raise (Bug ("Proof.recontructSubst: shouldn't fail:\n" ^ err));;
-*)
 
   let reconstructResolvant cl1 cl2 cl =
       (if not (Literal.Set.subset cl1 cl) then
@@ -4310,10 +4297,6 @@ let inferenceToThm = function
            if not (Literal.Set.null lits) then Literal.Set.pick lits
            else raise (Bug "can't reconstruct Resolve rule")
          );;
-(*MetisDebug
-      handle Error err ->
-        raise (Bug ("Proof.recontructResolvant: shouldn't fail:\n" ^ err));;
-*)
 
   let reconstructEquality cl =
 (*MetisTrace3
@@ -4369,10 +4352,6 @@ let inferenceToThm = function
           Some info -> info
         | None -> raise (Bug "can't reconstruct Equality rule")
       ;;
-(*MetisDebug
-      handle Error err ->
-        raise (Bug ("Proof.recontructEquality: shouldn't fail:\n" ^ err));;
-*)
 
   let reconstruct cl = function
       (Thm.Axiom,[]) -> Axiom cl
@@ -4414,27 +4393,8 @@ let inferenceToThm = function
 (*MetisTrace3
         let () = Print.trace ppInference "Proof.thmToInference: inf" inf
 *)
-(*MetisDebug
-        let () =
-            let
-              let th' = inferenceToThm inf
-            in
-              if Literal.Set.equal (Thm.clause th') cl then ()
-              else
-                raise
-                  Bug
-                    ("Proof.thmToInference: bad inference reconstruction:" ^
-                     "\n  th = " ^ Thm.toString th ^
-                     "\n  inf = " ^ inferenceToString inf ^
-                     "\n  inf th = " ^ Thm.toString th')
-            end
-*)
       in
         inf
-(*MetisDebug
-      handle Error err ->
-        raise (Bug ("Proof.thmToInference: shouldn't fail:\n" ^ err));;
-*)
 ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -4652,14 +4612,6 @@ let transEqn (((x,y), th1) as eqn1) (((_,z), th2) as eqn2) =
              th
            );;
 
-(*MetisDebug
-let transEqn = fun eqn1 -> fun eqn2 ->
-    transEqn eqn1 eqn2
-    handle Error err ->
-      raise Error ("Rule.transEqn:\neqn1 = " ^ equationToString eqn1 ^
-                   "\neqn2 = " ^ equationToString eqn2 ^ "\n" ^ err);;
-*)
-
 (* ------------------------------------------------------------------------- *)
 (* A conversion takes a term t and either:                                   *)
 (* 1. Returns a term u together with a theorem (stronger than) t = u \/ C.   *)
@@ -4672,19 +4624,6 @@ let allConv tm = (tm, Thm.refl tm);;
 
 let noConv : conv = fun _ -> raise (Error "noConv");;
 
-(*MetisDebug
-let traceConv s conv tm =
-    let
-      let res as (tm',th) = conv tm
-      let () = trace (s ^ ": " ^ Term.toString tm ^ " --> " ^
-                      Term.toString tm' ^ " " ^ Thm.toString th ^ "\n")
-    in
-      res
-    end
-    handle Error err ->
-      (trace (s ^ ": " ^ Term.toString tm ^ " --> Error: " ^ err ^ "\n");;
-       raise (Error (s ^ ": " ^ err)));;
-*)
 
 let thenConvTrans tm (tm',th1) (tm'',th2) =
       let eqn1 = ((tm,tm'),th1)
@@ -4744,17 +4683,6 @@ let rewrConv (((x,y), eqTh) as eqn) path tm =
         (tm',th)
       ;;
 
-(*MetisDebug
-let rewrConv = fun eqn as ((x,y),eqTh) -> fun path -> fun tm ->
-    rewrConv eqn path tm
-    handle Error err ->
-      raise Error ("Rule.rewrConv:\nx = " ^ Term.toString x ^
-                   "\ny = " ^ Term.toString y ^
-                   "\neqTh = " ^ Thm.toString eqTh ^
-                   "\npath = " ^ Term.pathToString path ^
-                   "\ntm = " ^ Term.toString tm ^ "\n" ^ err);;
-*)
-
 let pathConv conv path tm =
       let x = Term.subterm tm path
       in let (y,th) = conv x
@@ -4786,12 +4714,6 @@ let repeatTopDownConv conv =
     in
       f
     ;;
-
-(*MetisDebug
-let repeatTopDownConv = fun conv -> fun tm ->
-    repeatTopDownConv conv tm
-    handle Error err -> raise (Error ("repeatTopDownConv: " ^ err));;
-*)
 
 (* ------------------------------------------------------------------------- *)
 (* A literule (bad pun) takes a literal L and either:                        *)
@@ -4860,15 +4782,6 @@ let rewrLiterule (((x,y),eqTh) as eqn) path lit =
         (lit',th)
       ;;
 
-(*MetisDebug
-let rewrLiterule = fun eqn -> fun path -> fun lit ->
-    rewrLiterule eqn path lit
-    handle Error err ->
-      raise Error ("Rule.rewrLiterule:\neqn = " ^ equationToString eqn ^
-                   "\npath = " ^ Term.pathToString path ^
-                   "\nlit = " ^ Literal.toString lit ^ "\n" ^ err);;
-*)
-
 let pathLiterule conv path lit =
       let tm = Literal.subterm lit path
       in let (tm',th) = conv tm
@@ -4927,14 +4840,6 @@ let literalRule literule lit th =
       else if not (Thm.negateMember lit litTh) then litTh
       else Thm.resolve lit th litTh
     ;;
-
-(*MetisDebug
-let literalRule = fun literule -> fun lit -> fun th ->
-    literalRule literule lit th
-    handle Error err ->
-      raise Error ("Rule.literalRule:\nlit = " ^ Literal.toString lit ^
-                   "\nth = " ^ Thm.toString th ^ "\n" ^ err);;
-*)
 
 let rewrRule eqTh lit path = literalRule (rewrLiterule eqTh path) lit;;
 
@@ -5197,10 +5102,6 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
       in
         snd (Mlist.foldl init ([],[]) acc)
     | ((sub,edge) :: sub_edges) ->
-(*MetisDebug
-        let () = if not (Substitute.null sub) then ()
-                 else raise Bug "Rule.factor.init_edges: empty subst"
-*)
         let (acc,apart) =
             match updateApart sub apart with
               Some apart' -> ((apart',sub,edge) :: acc, edge :: apart)
@@ -7368,33 +7269,6 @@ let weightTerm weight =
 let weightLowerBound (Weight (m,c)) =
     if Name.Map.exists (fun (_,n) -> n < 0) m then None else Some c;;
 
-(*MetisDebug
-let ppWeightList =
-    let
-      let ppCoeff n =
-          if n < 0 then Print.sequence (Print.ppString "~") (ppCoeff (~n))
-          else if n = 1 then Print.skip
-          else Print.ppInt n
-
-      let pp_tm (None,n) = Print.ppInt n
-        | pp_tm (Some v, n) = Print.sequence (ppCoeff n) (Name.pp v)
-    in
-      fun [] -> Print.ppInt 0
-       | tms -> Print.ppOpList " +" pp_tm tms
-    end;;
-
-let ppWeight (Weight (m,c)) =
-    let
-      let l = Name.Map.toList m
-      let l = List.map (fun (v,n) -> (Some v, n)) l
-      let l = if c = 0 then l else l @ [(None,c)]
-    in
-      ppWeightList l
-    end;;
-
-let weightToString = Print.toString ppWeight;;
-*)
-
 (* ------------------------------------------------------------------------- *)
 (* The Knuth-Bendix term order.                                              *)
 (* ------------------------------------------------------------------------- *)
@@ -7798,9 +7672,6 @@ let rewriteIdEqn' order known redexes id ((l_r,th) as eqn) =
          if strongEqn then th
          else if not (Thm.negateMember lit litTh) then litTh
          else Thm.resolve lit th litTh);;
-(*MetisDebug
-    handle Error err -> raise (Error ("Rewrite.rewriteIdEqn':\n" ^ err));;
-*)
 
 let rewriteIdLiteralsRule' order known redexes id lits th =
       let mk_literule = neqConvsRewrIdLiterule order known redexes id
@@ -7839,24 +7710,6 @@ let rewriteIdLiteralsRule' order known redexes id lits th =
 
 let rewriteIdRule' order known redexes id th =
     rewriteIdLiteralsRule' order known redexes id (Thm.clause th) th;;
-
-(*MetisDebug
-let rewriteIdRule' = fun order -> fun known -> fun redexes -> fun id -> fun th ->
-    let
-(*MetisTrace6
-      let () = Print.trace Thm.pp "Rewrite.rewriteIdRule': th" th
-*)
-      let result = rewriteIdRule' order known redexes id th
-(*MetisTrace6
-      let () = Print.trace Thm.pp "Rewrite.rewriteIdRule': result" result
-*)
-      let _ = not (thmReducible order known id result) ||
-              raise Bug "rewriteIdRule: should be normalized"
-    in
-      result
-    end
-    handle Error err -> raise (Error ("Rewrite.rewriteIdRule:\n" ^ err));;
-*)
 
 let rewrIdConv (Rewrite {known=known;redexes=redexes}) order =
     rewrIdConv' order known redexes;;
@@ -8059,28 +7912,6 @@ let isReduced (Rewrite {waiting=waiting}) = Intset.null waiting;;
 let reduce' rw =
     if isReduced rw then (rw,[])
     else reduceAcc (Intset.empty,Intset.empty,Intset.empty,rw,Intset.empty);;
-
-(*MetisDebug
-let reduce' = fun rw ->
-    let
-(*MetisTrace4
-      let () = Print.trace pp "Rewrite.reduce': rw" rw
-*)
-      let Rewrite {known,order,...} = rw
-      let result as (Rewrite {known = known', ...}, _) = reduce' rw
-(*MetisTrace4
-      let ppResult = Print.ppPair pp (Print.ppList Print.ppInt)
-      let () = Print.trace ppResult "Rewrite.reduce': result" result
-*)
-      let ths = List.map (fun (id,((_,th),_)) -> (id,th)) (Intmap.toList known')
-      let _ =
-          not (List.exists (uncurry (thmReducible order known')) ths) ||
-          raise Bug "Rewrite.reduce': not fully reduced"
-    in
-      result
-    end
-    handle Error err -> raise (Bug ("Rewrite.reduce': shouldn't fail\n" ^ err));;
-*)
 
 let reduce rw = fst (reduce' rw);;
 
@@ -8417,9 +8248,6 @@ let rewrite rewr (Clause {parameters=parameters;id=id;thm=thm}) =
 *)
     in
       result;;
-(*MetisDebug
-    handle Error err -> raise (Error ("Clause.rewrite:\n" ^ err));;
-*)
 
 (* ------------------------------------------------------------------------- *)
 (* Inference rules: these generate new clause ids.                           *)
@@ -8557,198 +8385,6 @@ open Ax_cj
 (* Helper functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
-(*MetisDebug
-local
-  let mkRewrite ordering =
-      let
-        let add (cl,rw) =
-            let
-              let {id, thm = th, ...} = Clause.dest cl
-            in
-              match total Thm.destUnitEq th with
-                Some l_r -> Rewrite.add rw (id,(l_r,th))
-              | None -> rw
-            end
-      in
-        Mlist.foldl add (Rewrite.new (Knuth_bendix_order.compare ordering))
-      end;;
-
-  let allFactors red =
-      let
-        let allClause cl =
-            List.all red (cl :: Clause.factor cl) ||
-            let
-              let () = Print.trace Clause.pp
-                         "Active.isSaturated.allFactors: cl" cl
-            in
-              false
-            end
-      in
-        List.all allClause
-      end;;
-
-  let allResolutions red =
-      let
-        let allClause2 cl_lit cl =
-            let
-              let allLiteral2 lit =
-                  match total (Clause.resolve cl_lit) (cl,lit) with
-                    None -> true
-                  | Some cl -> allFactors red [cl]
-            in
-              Literal.Set.all allLiteral2 (Clause.literals cl)
-            end ||
-            let
-              let () = Print.trace Clause.pp
-                         "Active.isSaturated.allResolutions: cl2" cl
-            in
-              false
-            end
-
-        let allClause1 allCls cl =
-            let
-              let cl = Clause.freshVars cl
-
-              let allLiteral1 lit = List.all (allClause2 (cl,lit)) allCls
-            in
-              Literal.Set.all allLiteral1 (Clause.literals cl)
-            end ||
-            let
-              let () = Print.trace Clause.pp
-                         "Active.isSaturated.allResolutions: cl1" cl
-            in
-              false
-            end
-
-      in
-        fun [] -> true
-         | allCls as cl :: cls ->
-           allClause1 allCls cl && allResolutions red cls
-      end;;
-
-  let allParamodulations red cls =
-      let
-        let allClause2 cl_lit_ort_tm cl =
-            let
-              let allLiteral2 lit =
-                  let
-                    let para = Clause.paramodulate cl_lit_ort_tm
-
-                    let allSubterms (path,tm) =
-                        match total para (cl,lit,path,tm) with
-                          None -> true
-                        | Some cl -> allFactors red [cl]
-                  in
-                    List.all allSubterms (Literal.nonVarTypedSubterms lit)
-                  end ||
-                  let
-                    let () = Print.trace Literal.pp
-                               "Active.isSaturated.allParamodulations: lit2" lit
-                  in
-                    false
-                  end
-            in
-              Literal.Set.all allLiteral2 (Clause.literals cl)
-            end ||
-            let
-              let () = Print.trace Clause.pp
-                         "Active.isSaturated.allParamodulations: cl2" cl
-              let (_,_,ort,_) = cl_lit_ort_tm
-              let () = Print.trace Rewrite.ppOrient
-                         "Active.isSaturated.allParamodulations: ort1" ort
-            in
-              false
-            end
-
-        let allClause1 cl =
-            let
-              let cl = Clause.freshVars cl
-
-              let allLiteral1 lit =
-                  let
-                    let allCl2 x = List.all (allClause2 x) cls
-                  in
-                    match total Literal.destEq lit with
-                      None -> true
-                    | Some (l,r) ->
-                      allCl2 (cl,lit,Rewrite.Left_to_right,l) &&
-                      allCl2 (cl,lit,Rewrite.Right_to_left,r)
-                  end ||
-                  let
-                    let () = Print.trace Literal.pp
-                               "Active.isSaturated.allParamodulations: lit1" lit
-                  in
-                    false
-                  end
-            in
-              Literal.Set.all allLiteral1 (Clause.literals cl)
-            end ||
-            let
-              let () = Print.trace Clause.pp
-                         "Active.isSaturated.allParamodulations: cl1" cl
-            in
-              false
-            end
-      in
-        List.all allClause1 cls
-      end;;
-
-  let redundant {subsume,reduce,rewrite} =
-      let
-        let simp cl =
-            match Clause.simplify cl with
-              None -> true
-            | Some cl ->
-              Subsume.isStrictlySubsumed subsume (Clause.literals cl) ||
-              let
-                let cl' = cl
-                let cl' = Clause.reduce reduce cl'
-                let cl' = Clause.rewrite rewrite cl'
-              in
-                not (Clause.equalThms cl cl') &&
-                (simp cl' ||
-                 let
-                   let () = Print.trace Clause.pp
-                              "Active.isSaturated.redundant: cl'" cl'
-                 in
-                   false
-                 end)
-              end
-      in
-        fun cl ->
-           simp cl ||
-           let
-             let () = Print.trace Clause.pp
-                        "Active.isSaturated.redundant: cl" cl
-           in
-             false
-           end
-      end;;
-in
-  let isSaturated ordering subs cls =
-      let
-        let rd = Units.empty
-        let rw = mkRewrite ordering cls
-        let red = redundant {subsume = subs, reduce = rd, rewrite = rw}
-      in
-        (allFactors red cls &&
-         allResolutions red cls &&
-         allParamodulations red cls) ||
-        let
-          let () = Print.trace Rewrite.pp "Active.isSaturated: rw" rw
-          let () = Print.trace (Print.ppList Clause.pp)
-                     "Active.isSaturated: clauses" cls
-        in
-          false
-        end
-      end;;
-end;;
-
-let checkSaturated ordering subs cls =
-    if isSaturated ordering subs cls then ()
-    else raise (Bug "Active.checkSaturated");;
-*)
-
 (* ------------------------------------------------------------------------- *)
 (* A type of active clause sets.                                             *)
 (* ------------------------------------------------------------------------- *)
@@ -8838,12 +8474,6 @@ let saturation active =
       in let (cls,_) = Mlist.foldl remove ([], Subsume.newSubsume ()) cls
       in let (cls,subs) = Mlist.foldl remove ([], Subsume.newSubsume ()) cls
 
-(*MetisDebug
-      let Active {parameters,...} = active
-      let {clause,...} = parameters
-      let {ordering,...} = clause
-      let () = checkSaturated ordering subs cls
-*)
     in
       cls
     ;;
@@ -8879,44 +8509,6 @@ let simplify simp units rewr subs =
              in
                if s && Clause.subsumes subs cl then None else Some cl
     ;;
-
-(*MetisDebug
-let simplify = fun simp -> fun units -> fun rewr -> fun subs -> fun cl ->
-    let
-      let traceCl s = Print.trace Clause.pp ("Active.simplify: " ^ s)
-(*MetisTrace4
-      let ppClOpt = Print.ppOption Clause.pp
-      let () = traceCl "cl" cl
-*)
-      let cl' = simplify simp units rewr subs cl
-(*MetisTrace4
-      let () = Print.trace ppClOpt "Active.simplify: cl'" cl'
-*)
-      let () =
-          match cl' with
-            None -> ()
-          | Some cl' ->
-            case
-              (match simplify simp units rewr subs cl' with
-                 None -> Some ("away", K ())
-               | Some cl'' ->
-                 if Clause.equalThms cl' cl'' then None
-                 else Some ("further", fun () -> traceCl "cl''" cl'')) of
-              None -> ()
-            | Some (e,f) ->
-              let
-                let () = traceCl "cl" cl
-                let () = traceCl "cl'" cl'
-                let () = f ()
-              in
-                raise
-                  Bug
-                    ("Active.simplify: clause should have been simplified "^e)
-              end
-    in
-      cl'
-    end;;
-*)
 
 let simplifyActive simp active =
       let Active {units=units;rewrite=rewrite;subsume=subsume} = active
@@ -9166,32 +8758,6 @@ let deduce active cl =
       if choose_clause_rewritables active ids then clause_rewritables active
       else rewrite_rewritables active ids;;
 
-(*MetisDebug
-  let rewritables = fun active -> fun ids ->
-      let
-        let clause_ids = clause_rewritables active
-        let rewrite_ids = rewrite_rewritables active ids
-
-        let () =
-            if Intset.equal rewrite_ids clause_ids then ()
-            else
-              let
-                let ppIdl = Print.ppList Print.ppInt
-                let ppIds = Print.ppMap Intset.toList ppIdl
-                let () = Print.trace pp "Active.rewritables: active" active
-                let () = Print.trace ppIdl "Active.rewritables: ids" ids
-                let () = Print.trace ppIds
-                           "Active.rewritables: clause_ids" clause_ids
-                let () = Print.trace ppIds
-                           "Active.rewritables: rewrite_ids" rewrite_ids
-              in
-                raise Bug "Active.rewritables: ~(rewrite_ids SUBSET clause_ids)"
-              end
-      in
-        if choose_clause_rewritables active ids then clause_ids else rewrite_ids
-      end;;
-*)
-
   let delete active ids =
       if Intset.null ids then active
       else
@@ -9247,10 +8813,6 @@ let deduce active cl =
 *)
         in
           (delete active ids, cls)
-(*MetisDebug
-        handle Error err ->
-          raise (Bug ("Active.extract_rewritables: shouldn't fail\n" ^ err));;
-*)
 ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -9451,14 +9013,6 @@ let toString w = "Waiting{" ^ Int.toString (size w) ^ "}";;
   String.concat "\n" (List.map (fun (w, (d, c)) -> Clause.toString c) (Heap.toList clauses));;*)
 
 
-(*MetisDebug
-let pp =
-    Print.ppMap
-      (fun Waiting {clauses,...} ->
-          List.map (fun (w,(_,cl)) -> (w, Clause.id cl, cl)) (Heap.toList clauses))
-      (Print.ppList (Print.ppTriple Print.ppReal Print.ppInt Clause.pp));;
-*)
-
 (* ------------------------------------------------------------------------- *)
 (* Perturbing the models.                                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -9572,14 +9126,6 @@ let add' waiting dist mcls cls =
       let Waiting {parameters=parameters;clauses=clauses;models=models} = waiting
       in let {modelsP = modelParameters} = parameters
 
-(*MetisDebug
-      let _ = not (Mlist.null cls) ||
-              raise Bug "Waiting.add': null"
-
-      let _ = length mcls = length cls ||
-              raise Bug "Waiting.add': different lengths"
-*)
-
       in let dist = dist +. Math.ln (Real.fromInt (length cls))
 
       in let addCl ((mcl,cl),acc) =
@@ -9629,14 +9175,7 @@ let add waiting (dist,cls) =
       in
         if Mlist.null axioms_cl && Mlist.null conjecture_cl then waiting
         else add' waiting 0.0 (mAxioms @ mConjecture) (axioms_cl @ conjecture_cl)
-(*MetisDebug
-      handle e ->
-        let
-          let () = Print.trace Print.ppException "Waiting.new: exception" e
-        in
-          raise e
-        end;;
-*)
+      ;;
 
 (* ------------------------------------------------------------------------- *)
 (* Removing the lightest clause.                                             *)
@@ -9699,14 +9238,6 @@ let newResolution parameters ths =
       in let waiting = Waiting.newWaiting waitingParm cls
     in
       Resolution {parameters = parameters; active = active; waiting = waiting};;
-(*MetisDebug
-    handle e ->
-      let
-        let () = Print.trace Print.ppException "Resolution.new: exception" e
-      in
-        raise e
-      end;;
-*)
 
 let active (Resolution {active = a}) = a;;
 
