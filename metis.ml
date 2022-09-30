@@ -978,9 +978,13 @@ let rec treeIntersect compareKey f t1 t2 =
       | Tree n2 -> nodeIntersect compareKey f n1 n2
 
 and nodeIntersect compareKey f n1 n2 =
-      let {priority=priority;left=left;key=key;value=value;right=right} = n2
+      let priority = n2.priority in
+      let left = n2.left in
+      let key = n2.key in
+      let value = n2.value in
+      let right = n2.right in
 
-      in let (l,kvo,r) = nodePartition compareKey key n1
+      let (l,kvo,r) = nodePartition compareKey key n1
 
       in let left = treeIntersect compareKey f l left
       and right = treeIntersect compareKey f r right
@@ -1071,9 +1075,14 @@ let rec treeDifferenceDomain compareKey t1 t2 =
 and nodeDifferenceDomain compareKey n1 n2 =
     if pointerEqual (n1,n2) then Empty
     else
-        let {priority=priority;left=left;key=key;value=value;right=right} = n1
+        let size = n1.size in
+        let priority = n1.priority in
+        let left = n1.left in
+        let key = n1.key in
+        let value = n1.value in
+        let right = n1.right in
 
-        in let (l,kvo,r) = nodePartition compareKey key n2
+        let (l,kvo,r) = nodePartition compareKey key n2
 
         in let left = treeDifferenceDomain compareKey left l
         and right = treeDifferenceDomain compareKey right r
@@ -1127,8 +1136,10 @@ let treePick tree =
 (* ------------------------------------------------------------------------- *)
 
 let rec nodeDeletePick node =
-      let {left=left;key=key;value=value;right=right} = node
-    in
+    let left = node.left in
+    let key = node.key in
+    let value = node.value in
+    let right = node.right in
       ((key,value), treeAppend left right)
     ;;
 
@@ -1147,9 +1158,12 @@ let rec treeNth n tree =
     | Tree node -> nodeNth n node
 
 and nodeNth n node =
-      let {left=left;key=key;value=value;right=right} = node
+    let left = node.left in
+    let key = node.key in
+    let value = node.value in
+    let right = node.right in
 
-      in let k = treeSize left
+    let k = treeSize left
     in
       if n = k then (key,value)
       else if n < k then treeNth n left
@@ -1166,9 +1180,14 @@ let rec treeDeleteNth n tree =
     | Tree node -> nodeDeleteNth n node
 
 and nodeDeleteNth n node =
-      let {size=size;priority=priority;left=left;key=key;value=value;right=right} = node
+    let size = node.size in
+    let priority = node.priority in
+    let left = node.left in
+    let key = node.key in
+    let value = node.value in
+    let right = node.right in
 
-      in let k = treeSize left
+    let k = treeSize left
     in
       if n = k then ((key,value), treeAppend left right)
       else if n < k then
