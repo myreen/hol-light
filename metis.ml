@@ -711,10 +711,8 @@ let mkSidesPath path = addSidesPath (Empty,Empty) path;;
 (* Updating the subtree at a path *)
 
   let updateTree ((wentLeft,node),tree) =
-        let {priority=priority;left=left;key=key;value=value;right=right} = node
-      in
-        if wentLeft then mkTree priority tree key value right
-        else mkTree priority left key value tree;;
+        if wentLeft then mkTree node.priority tree node.key node.value node.right
+        else mkTree node.priority node.left node.key node.value tree;;
   let updateTreePath tree = Mlist.foldl updateTree tree;;
 
 (* Inserting a new node at a path position *)
@@ -756,11 +754,9 @@ let nodePartition compareKey pkey node =
         in
           (left,None,right)
       | Some node ->
-          let {left=left;key=key;value=value;right=right} = node
-
-          in let (left,right) = addSidesPath (left,right) path
+        let (left,right) = addSidesPath (node.left,node.right) path
         in
-          (left, Some (key,value), right)
+          (left, Some (node.key,node.value), right)
     ;;
 
 (* ------------------------------------------------------------------------- *)
