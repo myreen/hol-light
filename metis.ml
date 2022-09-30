@@ -769,12 +769,10 @@ let rec treePeekKey compareKey pkey tree =
     | Tree node -> nodePeekKey compareKey pkey node
 
 and nodePeekKey compareKey pkey node =
-      let {left=left;key=key;value=value;right=right} = node
-    in
-      match compareKey (pkey,key) with
-        Less -> treePeekKey compareKey pkey left
-      | Equal -> Some (key,value)
-      | Greater -> treePeekKey compareKey pkey right
+      match compareKey (pkey,node.key) with
+        Less -> treePeekKey compareKey pkey node.left
+      | Equal -> Some (node.key,node.value)
+      | Greater -> treePeekKey compareKey pkey node.right
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -792,16 +790,6 @@ let treeInsert compareKey key_value tree =
         in
           insertNodePath node path
       | Some node ->
-          let {size=size;priority=priority;left=left;right=right} = node
-
-          in let node =
-                {size = size;
-                 priority = priority;
-                 left = left;
-                 key = key;
-                 value = value;
-                 right = right}
-        in
           updateTreePath (Tree node) path
     ;;
 
@@ -816,8 +804,12 @@ let rec treeDelete compareKey dkey tree =
     | Tree node -> nodeDelete compareKey dkey node
 
 and nodeDelete compareKey dkey node =
-      let {size=size;priority=priority;left=left;key=key;value=value;right=right} = node
-    in
+    let size = node.size in
+    let priority = node.priority in
+    let left = node.left in
+    let key = node.key in
+    let value = node.value in
+    let right = node.right in
       match compareKey (dkey,key) with
         Less ->
           let size = size - 1
@@ -878,9 +870,13 @@ let rec treeMap f tree =
     | Tree node -> Tree (nodeMap f node)
 
 and nodeMap f node =
-      let {size=size;priority=priority;left=left;key=key;value=value;right=right} = node
-
-      in let left = treeMap f left
+    let size = node.size in
+    let priority = node.priority in
+    let left = node.left in
+    let key = node.key in
+    let value = node.value in
+    let right = node.right in
+      let left = treeMap f left
       and value = f (key,value)
       and right = treeMap f right
     in
@@ -906,9 +902,13 @@ let rec treeMerge compareKey f1 f2 fb tree1 tree2 =
       | Tree node2 -> nodeMerge compareKey f1 f2 fb node1 node2
 
 and nodeMerge compareKey f1 f2 fb node1 node2 =
-      let {priority=priority;left=left;key=key;value=value;right=right} = node2
+    let priority = node2.priority in
+    let left = node2.left in
+    let key = node2.key in
+    let value = node2.value in
+    let right = node2.right in
 
-      in let (l,kvo,r) = nodePartition compareKey key node1
+      let (l,kvo,r) = nodePartition compareKey key node1
 
       in let left = treeMerge compareKey f1 f2 fb l left
       and right = treeMerge compareKey f1 f2 fb r right
@@ -941,9 +941,13 @@ let rec treeUnion compareKey f f2 tree1 tree2 =
 and nodeUnion compareKey f f2 node1 node2 =
     if pointerEqual (node1,node2) then nodeMapPartial f2 node1
     else
-        let {priority=priority;left=left;key=key;value=value;right=right} = node2
+        let priority = node2.priority in
+        let left = node2.left in
+        let key = node2.key in
+        let value = node2.value in
+        let right = node2.right in
 
-        in let (l,kvo,r) = nodePartition compareKey key node1
+        let (l,kvo,r) = nodePartition compareKey key node1
 
         in let left = treeUnion compareKey f f2 l left
         and right = treeUnion compareKey f f2 r right
@@ -1006,9 +1010,13 @@ let rec treeUnionDomain compareKey tree1 tree2 =
         else nodeUnionDomain compareKey node1 node2
 
 and nodeUnionDomain compareKey node1 node2 =
-      let {priority=priority;left=left;key=key;value=value;right=right} = node2
+      let priority = node2.priority in
+      let left = node2.left in
+      let key = node2.key in
+      let value = node2.value in
+      let right = node2.right in
 
-      in let (l,_,r) = nodePartition compareKey key node1
+      let (l,_,r) = nodePartition compareKey key node1
 
       in let left = treeUnionDomain compareKey l left
       and right = treeUnionDomain compareKey r right
@@ -1033,9 +1041,13 @@ let rec treeIntersectDomain compareKey tree1 tree2 =
         else nodeIntersectDomain compareKey node1 node2
 
 and nodeIntersectDomain compareKey node1 node2 =
-      let {priority=priority;left=left;key=key;value=value;right=right} = node2
+      let priority = node2.priority in
+      let left = node2.left in
+      let key = node2.key in
+      let value = node2.value in
+      let right = node2.right in
 
-      in let (l,kvo,r) = nodePartition compareKey key node1
+      let (l,kvo,r) = nodePartition compareKey key node1
 
       in let left = treeIntersectDomain compareKey l left
       and right = treeIntersectDomain compareKey r right
@@ -1084,8 +1096,11 @@ let rec treeSubsetDomain compareKey tree1 tree2 =
 
 and nodeSubsetDomain compareKey node1 node2 =
     pointerEqual (node1,node2) ||
-      let {size=size;left=left;key=key;right=right} = node1
-    in
+      let size = node1.size in
+      let left = node1.left in
+      let key = node1.key in
+      let right = node1.right in
+
       size <= nodeSize node2 &&
         let (l,kvo,r) = nodePartition compareKey key node2
       in
@@ -1099,9 +1114,7 @@ and nodeSubsetDomain compareKey node1 node2 =
 (* ------------------------------------------------------------------------- *)
 
 let rec nodePick node =
-      let {key=key;value=value} = node
-    in
-      (key,value)
+      (node.key,node.value)
     ;;
 
 let treePick tree =
