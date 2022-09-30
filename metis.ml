@@ -691,21 +691,17 @@ let rec treePeekPath compareKey pkey path tree =
     | Tree node -> nodePeekPath compareKey pkey path node
 
 and nodePeekPath compareKey pkey path node =
-      let {left=left;key=key;right=right} = node
-    in
-      match compareKey (pkey,key) with
-        Less -> treePeekPath compareKey pkey ((true,node) :: path) left
+      match compareKey (pkey,node.key) with
+        Less -> treePeekPath compareKey pkey ((true,node) :: path) node.left
       | Equal -> (path, Some node)
-      | Greater -> treePeekPath compareKey pkey ((false,node) :: path) right
+      | Greater -> treePeekPath compareKey pkey ((false,node) :: path) node.right
     ;;
 
 (* A path splits a tree into left/right components *)
 
 let addSidePath ((wentLeft,node),(leftTree,rightTree)) =
-      let {priority=priority;left=left;key=key;value=value;right=right} = node
-    in
-      if wentLeft then (leftTree, mkTree priority rightTree key value right)
-      else (mkTree priority left key value leftTree, rightTree)
+      if wentLeft then (leftTree, mkTree node.priority rightTree node.key node.value node.right)
+      else (mkTree node.priority node.left node.key node.value leftTree, rightTree)
     ;;
 
 let addSidesPath left_right = Mlist.foldl addSidePath left_right;;
