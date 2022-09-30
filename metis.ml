@@ -5392,13 +5392,12 @@ type fixedMap =
       relationMap : Name.name Name_arity.Map.map};;
 
 let mapFixed fixMap fix =
-      let {functionMap = fnMap; relationMap = relMap} = fixMap
-      and {functions = fns; relations = rels} = fix
-
-      in let fns = Name_arity.Map.compose fnMap fns
-
-      in let rels = Name_arity.Map.compose relMap rels
-    in
+      let fnMap = fixMap.functionMap in
+      let relMap = fixMap.relationMap in
+      let fns = fix.functions in
+      let rels = fix.relations in
+      let fns = Name_arity.Map.compose fnMap fns in
+      let rels = Name_arity.Map.compose relMap rels in
         {functions = fns;
          relations = rels}
     ;;
@@ -5951,10 +5950,9 @@ let newTables n vR =
        tableMap = ref (Name_arity.Map.newMap ())};;
 
 let getTables tables n_a =
-      let {domainSize = n; rangeSize = _; tableMap = tm} = tables
-
-      in let m = !tm
-    in
+    let n = tables.domainSize in
+    let tm = tables.tableMap in
+    let m = !tm in
       match Name_arity.Map.peek m n_a with
         Some t -> t
       | None ->
@@ -5970,22 +5968,17 @@ let getTables tables n_a =
     ;;
 
 let lookupTables tables (n,elts) =
-      let {domainSize = vN; rangeSize = vR} = tables
-
-      in let a = length elts
-
-      in let table = getTables tables (n,a)
-    in
+    let vN = tables.domainSize in
+    let vR = tables.rangeSize in
+    let a = length elts in
+    let table = getTables tables (n,a) in
       lookupTable vN vR table elts
     ;;
 
 let updateTables tables ((n,elts),r) =
-      let {domainSize = vN} = tables
-
-      in let a = length elts
-
-      in let table = getTables tables (n,a)
-    in
+    let vN = tables.domainSize in
+    let a = length elts in
+    let table = getTables tables (n,a) in
       updateTable vN table (elts,r)
     ;;
 
@@ -6002,11 +5995,13 @@ type model =
        randomFunctions : tables;
        randomRelations : tables};;
 
-let newModel {sizep = vN; fixed = fixed} =
-      let {functions = fns; relations = rels} = fixed
-
-      in let fixFns = Name_arity.Map.transform (fun f -> f {size = vN}) fns
-      and fixRels = Name_arity.Map.transform (fun r -> r {size = vN}) rels
+let newModel x =
+    let vN = x.sizep in
+    let fixed = x.fixed in
+    let fns = fixed.functions in
+    let rels = fixed.relations in
+    let fixFns = Name_arity.Map.transform (fun f -> f {size = vN}) fns
+    and fixRels = Name_arity.Map.transform (fun r -> r {size = vN}) rels
 
       in let rndFns = newTables vN vN
       and rndRels = newTables vN 2
@@ -6018,12 +6013,11 @@ let newModel {sizep = vN; fixed = fixed} =
          randomRelations = rndRels}
     ;;
 
-let msize ({sizem = vN}) = vN;;
-let psize ({sizep = vN}) = vN;;
+let msize x = x.sizem;;
+let psize x = x.sizep;;
 
 let peekFixedFunction vM (n,elts) =
-      let {fixedFunctions = fixFns} = vM
-    in
+    let fixFns = vM.fixedFunctions in
       match Name_arity.Map.peek fixFns (n, length elts) with
         None -> None
       | Some fixFn -> fixFn elts
@@ -6032,8 +6026,7 @@ let peekFixedFunction vM (n,elts) =
 let isFixedFunction vM n_elts = Option.isSome (peekFixedFunction vM n_elts);;
 
 let peekFixedRelation vM (n,elts) =
-      let {fixedRelations = fixRels} = vM
-    in
+    let fixRels = vM.fixedRelations in
       match Name_arity.Map.peek fixRels (n, length elts) with
         None -> None
       | Some fixRel -> fixRel elts
@@ -6076,18 +6069,16 @@ let interpretFunction vM n_elts =
     match peekFixedFunction vM n_elts with
       Some r -> r
     | None ->
-        let {randomFunctions = rndFns} = vM
-      in
-        lookupTables rndFns n_elts
+        let rndFns = vM.randomFunctions in
+          lookupTables rndFns n_elts
       ;;
 
 let interpretRelation vM n_elts =
     match peekFixedRelation vM n_elts with
       Some r -> r
     | None ->
-        let {randomRelations = rndRels} = vM
-      in
-        intToBool (lookupTables rndRels n_elts)
+        let rndRels = vM.randomRelations in
+          intToBool (lookupTables rndRels n_elts)
       ;;
 
 let interpretTerm vM vV =
@@ -6181,18 +6172,14 @@ let checkClause maxChecks vM cl =
 (* ------------------------------------------------------------------------- *)
 
 let updateFunction vM func_elts_elt =
-      let {randomFunctions = rndFns} = vM
-
-      in let () = updateTables rndFns func_elts_elt
-    in
+    let rndFns = vM.randomFunctions in
+    let () = updateTables rndFns func_elts_elt in
       ()
     ;;
 
 let updateRelation vM (rel_elts,pol) =
-      let {randomRelations = rndRels} = vM
-
-      in let () = updateTables rndRels (rel_elts, boolToInt pol)
-    in
+    let rndRels = vM.randomRelations in
+    let () = updateTables rndRels (rel_elts, boolToInt pol) in
       ()
     ;;
 
@@ -6822,17 +6809,17 @@ let newNet parm = {positive = Atom_net.newNet parm; negative = Atom_net.newNet p
   (*let profile net = {positiveN = pos net; negativeN = neg net};;*)
 
 
-let insert {positive=positive;negative=negative} = function
+let insert x = function
     ((true,atm),a) ->
-    {positive = Atom_net.insert positive (atm,a); negative = negative}
+    {positive = Atom_net.insert x.positive (atm,a); negative = x.negative}
   | ((false,atm),a) ->
-    {positive = positive; negative = Atom_net.insert negative (atm,a)};;
+    {positive = x.positive; negative = Atom_net.insert x.negative (atm,a)};;
 
 let fromList parm l = Mlist.foldl (fun (lit_a,n) -> insert n lit_a) (newNet parm) l;;
 
-let filter pred {positive=positive;negative=negative} =
-    {positive = Atom_net.filter pred positive;
-     negative = Atom_net.filter pred negative};;
+let filter pred x =
+    {positive = Atom_net.filter pred x.positive;
+     negative = Atom_net.filter pred x.negative};;
 
 let toString net = "Literal_net[" ^ Int.toString (size net) ^ "]";;
 
@@ -8212,9 +8199,8 @@ let reduce units (Clause {parameters=parameters;id=id;thm=thm}) =
 
 let rewrite rewr (Clause {parameters=parameters;id=id;thm=thm}) =
       let simp th =
-            let {ordering=ordering} = parameters
-            in let cmp = Knuth_bendix_order.compare ordering
-          in
+          let ordering = parameters.ordering in
+          let cmp = Knuth_bendix_order.compare ordering in
             Rewrite.rewriteIdRule rewr cmp id th
 
 (*MetisTrace4
