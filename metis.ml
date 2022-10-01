@@ -850,7 +850,12 @@ let rec treeMapPartial f tree =
       Empty -> Empty
     | Tree node -> nodeMapPartial f node
 
-and nodeMapPartial f ({priority=priority;left=left;key=key;value=value;right=right}) =
+and nodeMapPartial f x =
+    let priority = x.priority in
+    let left = x.left in
+    let value = x.value in
+    let key = x.key in
+    let right = x.right in
       let left = treeMapPartial f left
       and vo = f (key,value)
       and right = treeMapPartial f right
@@ -1235,14 +1240,14 @@ type ('key,'value) iterator =
 let fromSpineLeftToRightIterator nodes =
     match nodes with
       [] -> None
-    | {key=key;value=value;right=right} :: nodes ->
-      Some (Left_to_right_iterator ((key,value),right,nodes));;
+    | n :: nodes ->
+      Some (Left_to_right_iterator ((n.key,n.value),n.right,nodes));;
 
 let fromSpineRightToLeftIterator nodes =
     match nodes with
       [] -> None
-    | {key=key;value=value;left=left} :: nodes ->
-      Some (Right_to_left_iterator ((key,value),left,nodes));;
+    | n :: nodes ->
+      Some (Right_to_left_iterator ((n.key,n.value),n.left,nodes));;
 
 let addLeftToRightIterator nodes tree = fromSpineLeftToRightIterator (treeLeftSpine nodes tree);;
 
@@ -5254,13 +5259,14 @@ type element = int;;
 
 let zeroElement = 0;;
 
-let incrementElement {size = n} i =
-      let i = i + 1
-    in
+let incrementElement s i =
+    let n = s.size in
+    let i = i + 1 in
       if i = n then None else Some i
     ;;
 
-let elementListSpace {size = n} arity =
+let elementListSpace s arity =
+  let n = s.size in
     match expInt n arity with
       None -> None
     | Some m as s -> if m <= maxSpace then s else None;;
@@ -6619,7 +6625,7 @@ let foldEqualTerms pat inc acc =
 
   let idwise ((m,_),(n,_)) = Int.compare (m,n);;
 
-  let fifoize ({fifo=fifo} : parameters) l = if fifo then sort idwise l else l;;
+  let fifoize (p : parameters) l = if p.fifo then sort idwise l else l;;
 
   let finally parm l = List.map snd (fifoize parm l);;
 
@@ -6800,9 +6806,9 @@ type 'a literalNet =
 
 let newNet parm = {positive = Atom_net.newNet parm; negative = Atom_net.newNet parm};;
 
-  let pos ({positive=positive} : 'a literalNet) = Atom_net.size positive;;
+  let pos (x : 'a literalNet) = Atom_net.size x.positive;;
 
-  let neg ({negative=negative} : 'a literalNet) = Atom_net.size negative;;
+  let neg (x : 'a literalNet) = Atom_net.size x.negative;;
 
   let size net = pos net + neg net;;
 
@@ -6831,20 +6837,17 @@ let toString net = "Literal_net[" ^ Int.toString (size net) ^ "]";;
 (* Filter afterwards to get the precise set of satisfying values.            *)
 (* ------------------------------------------------------------------------- *)
 
-let matchNet ({positive=positive;negative=negative} : 'a literalNet) = function
-    (true,atm) ->
-    Atom_net.matchNet positive atm
-  | (false,atm) -> Atom_net.matchNet negative atm;;
+let matchNet (x : 'a literalNet) = function
+    (true,atm) -> Atom_net.matchNet x.positive atm
+  | (false,atm) -> Atom_net.matchNet x.negative atm;;
 
-let matched ({positive=positive;negative=negative} : 'a literalNet) = function
-    (true,atm) ->
-    Atom_net.matched positive atm
-  | (false,atm) -> Atom_net.matched negative atm;;
+let matched (x : 'a literalNet) = function
+    (true,atm) -> Atom_net.matched x.positive atm
+  | (false,atm) -> Atom_net.matched x.negative atm;;
 
-let unify ({positive=positive;negative=negative} : 'a literalNet) = function
-    (true,atm) ->
-    Atom_net.unify positive atm
-  | (false,atm) -> Atom_net.unify negative atm;;
+let unify (x : 'a literalNet) = function
+    (true,atm) -> Atom_net.unify x.positive atm
+  | (false,atm) -> Atom_net.unify x.negative atm;;
 
 end
 
@@ -6940,10 +6943,13 @@ let newSubsume () =
           fstLits = Literal_net.newNet {fifo = false};
           sndLits = Literal_net.newNet {fifo = false}}};;
 
-let size ({empty=empty; unitn=unitn; nonunit = {clauses=clauses}}) =
-    length empty + Literal_net.size unitn + Intmap.size clauses;;
+let size x =
+    length x.empty + Literal_net.size x.unitn + Intmap.size x.nonunit.clauses;;
 
-let insert ({empty=empty;unitn=unitn;nonunit=nonunit}) (cl',a) =
+let insert z (cl',a) =
+  let empty = z.empty in
+  let unitn = z.unitn in
+  let nonunit = z.nonunit in
     match sortClause cl' with
       [] ->
         let empty = (cl',Substitute.empty,a) :: empty
@@ -6974,7 +6980,10 @@ let insert ({empty=empty;unitn=unitn;nonunit=nonunit}) (cl',a) =
         {empty = empty; unitn = unitn; nonunit = nonunit}
       ;;
 
-let filter pred ({empty=empty;unitn=unitn;nonunit=nonunit}) =
+let filter pred z =
+  let empty = z.empty in
+  let unitn = z.unitn in
+  let nonunit = z.nonunit in
       let pred3 (_,_,x) = pred x
       in let empty = List.filter pred3 empty
 
@@ -7081,7 +7090,10 @@ let toString subsume = "Subsume{" ^ Int.toString (size subsume) ^ "}";;
         Pset.firstl subCl' cands
       ;;
 
-  let genSubsumes pred ({empty=empty;unitn=unitn;nonunit=nonunit}) max cl =
+  let genSubsumes pred z max cl =
+    let empty = z.empty in
+    let unitn = z.unitn in
+    let nonunit = z.nonunit in
       match emptySubsumes pred empty with
         (Some _) as s -> s
       | None ->
@@ -8080,7 +8092,7 @@ type clause = Clause of clauseInfo;;
 (* Pretty printing.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
-let toString (Clause {id=id;thm=thm}) = Thm.toString thm;;
+let toString (Clause x) = Thm.toString x.thm;;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -8096,9 +8108,9 @@ let mk info = Clause info
 
 let dest (Clause info) = info;;
 
-let id (Clause {id = i}) = i;;
+let id (Clause x) = x.id;;
 
-let thm (Clause {thm = th}) = th;;
+let thm (Clause x) = x.thm;;
 
 let equalThms cl cl' = Thm.equal (thm cl) (thm cl');;
 
@@ -8107,9 +8119,9 @@ let newClause parameters thm =
 
 let literals cl = Thm.clause (thm cl);;
 
-let isTautology (Clause {thm=thm}) = Thm.isTautology thm;;
+let isTautology (Clause x) = Thm.isTautology x.thm;;
 
-let isContradiction (Clause {thm=thm}) = Thm.isContradiction thm;;
+let isContradiction (Clause x) = Thm.isContradiction x.thm;;
 
 (* ------------------------------------------------------------------------- *)
 (* The term ordering is used to cut down inferences.                         *)
@@ -8120,8 +8132,8 @@ let strictlyLess ordering x_y =
       Some Less -> true
     | _ -> false;;
 
-let isLargerTerm ({ordering=ordering;orderTerms=orderTerms} : parameters) l_r =
-    not orderTerms || not (strictlyLess ordering l_r);;
+let isLargerTerm (p : parameters) l_r =
+    not p.orderTerms || not (strictlyLess p.ordering l_r);;
 
   let atomToTerms atm =
       match total Atom.destEq atm with
@@ -8134,7 +8146,9 @@ let isLargerTerm ({ordering=ordering;orderTerms=orderTerms} : parameters) l_r =
         not (Mlist.all less xs)
       ;;
 
-  let isLargerLiteral ({ordering=ordering;orderLiterals=orderLiterals} : parameters) lits =
+  let isLargerLiteral (p : parameters) lits =
+    let ordering = p.ordering in
+    let orderLiterals = p.orderLiterals in
       match orderLiterals with
         No_literal_order -> kComb true
       | Unsigned_literal_order ->
@@ -8158,7 +8172,9 @@ let isLargerTerm ({ordering=ordering;orderTerms=orderTerms} : parameters) l_r =
           ;;
 
 
-let largestLiterals (Clause {parameters=parameters;thm=thm}) =
+let largestLiterals (Clause x) =
+    let parameters = x.parameters in
+    let thm = x.thm in
       let litSet = Thm.clause thm
       in let isLarger = isLargerLiteral parameters litSet
       in let addLit (lit,s) = if isLarger lit then Literal.Set.add s lit else s
@@ -8178,7 +8194,8 @@ let largestLiterals = fun cl ->
     end;;
 *)
 
-let largestEquations (Clause {parameters=parameters} as cl) =
+let largestEquations (Clause x as cl) =
+      let parameters = x.parameters in
       let addEq lit ort ((l,_) as l_r) acc =
           if isLargerTerm parameters l_r then (lit,ort,l) :: acc else acc
 
@@ -8215,18 +8232,21 @@ let subsumes (subs : clause Subsume.subsume) cl =
 (* Simplifying rules: these preserve the clause id.                          *)
 (* ------------------------------------------------------------------------- *)
 
-let freshVars (Clause {parameters=parameters;id=id;thm=thm}) =
-    Clause {parameters = parameters; id = id; thm = Rule.freshVars thm};;
+let freshVars (Clause x) =
+    Clause {parameters = x.parameters; id = x.id; thm = Rule.freshVars x.thm};;
 
-let simplify (Clause {parameters=parameters;id=id;thm=thm}) =
-    match Rule.simplify thm with
+let simplify (Clause x) =
+    match Rule.simplify x.thm with
       None -> None
-    | Some thm -> Some (Clause {parameters = parameters; id = id; thm = thm});;
+    | Some thm -> Some (Clause {parameters = x.parameters; id = x.id; thm = thm});;
 
-let reduce units (Clause {parameters=parameters;id=id;thm=thm}) =
-    Clause {parameters = parameters; id = id; thm = Units.reduce units thm};;
+let reduce units (Clause x) =
+    Clause {parameters = x.parameters; id = x.id; thm = Units.reduce units x.thm};;
 
-let rewrite rewr (Clause {parameters=parameters;id=id;thm=thm}) =
+let rewrite rewr (Clause x) =
+  let parameters = x.parameters in
+  let id = x.id in
+  let thm = x.thm in
       let simp th =
           let ordering = parameters.ordering in
           let cmp = Knuth_bendix_order.compare ordering in
@@ -8255,11 +8275,11 @@ let rewrite rewr (Clause {parameters=parameters;id=id;thm=thm}) =
 (* Inference rules: these generate new clause ids.                           *)
 (* ------------------------------------------------------------------------- *)
 
-let factor (Clause {parameters=parameters;thm=thm} as cl) =
-      let lits = largestLiterals cl
-
-      in let apply sub = newClause parameters (Thm.subst sub thm)
-    in
+let factor (Clause x as cl) =
+    let parameters = x.parameters in
+    let thm = x.thm in
+    let lits = largestLiterals cl in
+    let apply sub = newClause parameters (Thm.subst sub thm) in
       List.map apply (Rule.factor' lits)
     ;;
 
@@ -8422,13 +8442,18 @@ type active_t =
 type active =
     Active of active_t;;
 
-let getSubsume (Active {subsume = s}) = s;;
+let getSubsume (Active a) = a.subsume;;
 
 let setRewrite active rewrite =
-      let Active
-            {parameters=parameters;clauses=clauses;units=units;subsume=subsume;literals=literals;equations=equations;
-             subterms=subterms;allSubterms=allSubterms} = active
-    in
+    let Active a = active in
+    let parameters = a.parameters in
+    let clauses = a.clauses in
+    let units = a.units in
+    let subsume = a.subsume in
+    let literals = a.literals in
+    let equations = a.equations in
+    let subterms = a.subterms in
+    let allSubterms = a.allSubterms in
       Active
         {parameters = parameters; clauses = clauses; units = units;
          rewrite = rewrite; subsume = subsume; literals = literals;
@@ -8462,12 +8487,12 @@ let empty parameters =
          allSubterms = Term_net.newNet {fifo = false}}
     ;;
 
-let size (Active {clauses=clauses}) = Intmap.size clauses;;
+let size (Active a) = Intmap.size a.clauses;;
 
-let clauses (Active {clauses = cls}) =
+let clauses (Active a) =
       let add (_,cl,acc) = cl :: acc
     in
-      Intmap.foldr add [] cls
+      Intmap.foldr add [] a.clauses
     ;;
 
 let saturation active =
@@ -8519,9 +8544,8 @@ let simplify simp units rewr subs =
     ;;
 
 let simplifyActive simp active =
-      let Active {units=units;rewrite=rewrite;subsume=subsume} = active
-    in
-      simplify simp units rewrite subsume
+    let Active a = active in
+      simplify simp a.units a.rewrite a.subsume
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -8576,10 +8600,17 @@ let addAllSubterms allSubterms cl =
     ;;
 
 let addClause active cl =
-      let Active
-            {parameters=parameters;clauses=clauses;units=units;rewrite=rewrite;subsume=subsume;literals=literals;
-             equations=equations;subterms=subterms;allSubterms=allSubterms} = active
-      in let clauses = Intmap.insert clauses (Clause.id cl, cl)
+    let Active a = active in
+    let parameters = a.parameters in
+    let clauses = a.clauses in
+    let units = a.units in
+    let rewrite = a.rewrite in
+    let subsume = a.subsume in
+    let literals = a.literals in
+    let equations = a.equations in
+    let subterms = a.subterms in
+    let allSubterms = a.allSubterms in
+      let clauses = Intmap.insert clauses (Clause.id cl, cl)
       and subsume = addSubsume subsume cl
       and literals = addLiterals literals cl
       and equations = addEquations equations cl
@@ -8594,10 +8625,17 @@ let addClause active cl =
     ;;
 
 let addFactorClause active cl =
-      let Active
-            {parameters=parameters;clauses=clauses;units=units;rewrite=rewrite;subsume=subsume;literals=literals;
-             equations=equations;subterms=subterms;allSubterms=allSubterms} = active
-      in let units = addUnit units cl
+    let Active a = active in
+    let parameters = a.parameters in
+    let clauses = a.clauses in
+    let units = a.units in
+    let rewrite = a.rewrite in
+    let subsume = a.subsume in
+    let literals = a.literals in
+    let equations = a.equations in
+    let subterms = a.subterms in
+    let allSubterms = a.allSubterms in
+      let units = addUnit units cl
       and rewrite = addRewrite rewrite cl
     in
       Active
@@ -8648,9 +8686,12 @@ let deduceParamodulationInto equations cl ((lit,path,tm),acc) =
     ;;
 
 let deduce active cl =
-      let Active {parameters=parameters;literals=literals;equations=equations;subterms=subterms} = active
-
-      in let lits = Clause.largestLiterals cl
+    let Active a = active in
+    let parameters = a.parameters in
+    let literals = a.literals in
+    let equations = a.equations in
+    let subterms = a.subterms in
+      let lits = Clause.largestLiterals cl
       in let eqns = Clause.largestEquations cl
       in let subtms =
           if Term_net.null equations then [] else Clause.largestSubterms cl
@@ -8685,9 +8726,10 @@ let deduce active cl =
 (* ------------------------------------------------------------------------- *)
 
   let clause_rewritables active =
-        let Active {clauses=clauses;rewrite=rewrite} = active
-
-        in let rewr (id,cl,ids) =
+    let Active a = active in
+    let clauses = a.clauses in
+    let rewrite = a.rewrite in
+        let rewr (id,cl,ids) =
               let cl' = Clause.rewrite rewrite cl
             in
               if Clause.equalThms cl cl' then ids else Intset.add ids id
@@ -8707,8 +8749,12 @@ let deduce active cl =
       | Some _ -> [];;
 
   let rewrite_rewritables active rewr_ids =
-        let Active {parameters=parameters;rewrite=rewrite;clauses=clauses;allSubterms=allSubterms} = active
-        in let ordering = parameters.clause.Clause.ordering
+    let Active a = active in
+    let parameters = a.parameters in
+    let clauses = a.clauses in
+    let rewrite = a.rewrite in
+    let allSubterms = a.allSubterms in
+        let ordering = parameters.clause.Clause.ordering
         in let order = Knuth_bendix_order.compare ordering
 
         in let addRewr (id,acc) =
@@ -8769,22 +8815,21 @@ let deduce active cl =
   let delete active ids =
       if Intset.null ids then active
       else
-          let idPred id = not (Intset.member id ids)
+          let idPred id = not (Intset.member id ids) in
+          let clausePred cl = idPred (Clause.id cl) in
 
-          in let clausePred cl = idPred (Clause.id cl)
+          let Active a = active in
+          let parameters = a.parameters in
+          let clauses = a.clauses in
+          let units = a.units in
+          let subsume = a.subsume in
+          let rewrite = a.rewrite in
+          let literals = a.literals in
+          let equations = a.equations in
+          let subterms = a.subterms in
+          let allSubterms = a.allSubterms in
 
-          in let Active
-                {parameters=parameters;
-                 clauses=clauses;
-                 units=units;
-                 rewrite=rewrite;
-                 subsume=subsume;
-                 literals=literals;
-                 equations=equations;
-                 subterms=subterms;
-                 allSubterms=allSubterms} = active
-
-          in let cP1 (x,_) = clausePred x
+          let cP1 (x,_) = clausePred x
           in let cP1_4 (x,_,_,_) = clausePred x
           in let clauses = Intmap.filter (fun x -> idPred (fst x)) clauses
           and subsume = Subsume.filter clausePred subsume
@@ -8805,7 +8850,9 @@ let deduce active cl =
              allSubterms = allSubterms}
         ;;
 
-  let extract_rewritables (Active {clauses=clauses;rewrite=rewrite} as active) =
+  let extract_rewritables (Active a as active) =
+    let clauses = a.clauses in
+    let rewrite = a.rewrite in
       if Rewrite.isReduced rewrite then (active,[])
       else
 (*MetisTrace3
@@ -8828,17 +8875,21 @@ let deduce active cl =
 (* ------------------------------------------------------------------------- *)
 
   let prefactor_simplify active subsume =
-        let Active {parameters=parameters;units=units;rewrite=rewrite} = active
-        in let prefactor = parameters.prefactor
-      in
-        simplify prefactor units rewrite subsume
+    let Active a = active in
+    let parameters = a.parameters in
+    let units = a.units in
+    let rewrite = a.rewrite in
+    let prefactor = parameters.prefactor in
+      simplify prefactor units rewrite subsume
       ;;
 
   let postfactor_simplify active subsume =
-        let Active {parameters=parameters;units=units;rewrite=rewrite} = active
-        in let postfactor = parameters.postfactor
-      in
-        simplify postfactor units rewrite subsume
+    let Active a = active in
+    let parameters = a.parameters in
+    let units = a.units in
+    let rewrite = a.rewrite in
+    let postfactor = parameters.postfactor in
+      simplify postfactor units rewrite subsume
       ;;
 
   let sort_utilitywise =
@@ -9014,12 +9065,12 @@ let default : parameters =
       variablesWeight = 1.0;
       modelsP = defaultModels};;
 
-let size (Waiting {clauses=clauses}) = Heap.size clauses;;
+let size (Waiting w) = Heap.size w.clauses;;
 
 let toString w = "Waiting{" ^ Int.toString (size w) ^ "}";;
 
-(*let toString (Waiting {clauses}) = "\n" ^
-  String.concat "\n" (List.map (fun (w, (d, c)) -> Clause.toString c) (Heap.toList clauses));;*)
+(*let toString (Waiting w) = "\n" ^
+  String.concat "\n" (List.map (fun (w, (d, c)) -> Clause.toString c) (Heap.toList w.clauses));;*)
 
 
 (* ------------------------------------------------------------------------- *)
@@ -9099,8 +9150,11 @@ let perturbModels parms models cls =
 (*MetisTrace3
         let () = Print.trace Clause.pp "Waiting.clauseWeight: cl" cl
 *)
-        let {symbolsWeight=symbolsWeight;variablesWeight=variablesWeight;literalsWeight=literalsWeight;modelsP=modelsP} = parm
-        in let lits = Clause.literals cl
+        let symbolsWeight = parm.symbolsWeight in
+        let variablesWeight = parm.variablesWeight in
+        let literalsWeight = parm.literalsWeight in
+        let modelsP = parm.modelsP in
+        let lits = Clause.literals cl
         in let symbolsW = Math.pow (clauseSymbols lits, symbolsWeight)
         in let variablesW = Math.pow (clauseVariables lits, variablesWeight)
         in let literalsW = Math.pow (clauseLiterals lits, literalsWeight)
@@ -9132,8 +9186,11 @@ let perturbModels parms models cls =
 (* ------------------------------------------------------------------------- *)
 
 let add' waiting dist mcls cls =
-      let Waiting {parameters=parameters;clauses=clauses;models=models} = waiting
-      in let modelParameters = parameters.modelsP
+      let Waiting w = waiting in
+      let parameters = w.parameters in
+      let clauses = w.clauses in
+      let models = w.models in
+      let modelParameters = parameters.modelsP
 
       in let dist = dist +. Math.ln (Real.fromInt (length cls))
 
@@ -9192,7 +9249,10 @@ let add waiting (dist,cls) =
 (* Removing the lightest clause.                                             *)
 (* ------------------------------------------------------------------------- *)
 
-let remove (Waiting {parameters=parameters;clauses=clauses;models=models}) =
+let remove (Waiting w) =
+  let parameters = w.parameters in
+  let clauses = w.clauses in
+  let models = w.models in
     if Heap.null clauses then None
     else
         let ((_,dcl),clauses) = Heap.remove clauses
@@ -9250,9 +9310,9 @@ let newResolution parameters ths =
     in
       Resolution {parameters = parameters; active = active; waiting = waiting};;
 
-let active (Resolution {active = a}) = a;;
+let active (Resolution r) = r.active;;
 
-let waiting (Resolution {waiting = w}) = w;;
+let waiting (Resolution r) = r.waiting;;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -9268,13 +9328,15 @@ type state =
   | Undecided of resolution;;
 
 let iterate res =
-      let Resolution {parameters=parameters;active=active;waiting=waiting} = res
+      let Resolution r = res in
+      let parameters = r.parameters in
+      let active = r.active in
+      let waiting = r.waiting in
 
 (*MetisTrace2
       let () = Print.trace Active.pp "Resolution.iterate: active" active
       let () = Print.trace Waiting.pp "Resolution.iterate: waiting" waiting
 *)
-    in
       (*
       print_endline ("Resolution.iterate:active: " ^ Active.toString active);
       print_endline ("Resolution.iterate:waiting: " ^ Waiting.toString waiting);
